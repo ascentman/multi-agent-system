@@ -14,7 +14,16 @@ QUERY_SYSTEM = """You are a search query specialist. Given a research subtask (a
 failed query with a failure reason), produce a single focused web search query that will return
 the most relevant results. Keep queries concise and specific (under 10 words).
 
+Always write the query in English regardless of the research language.
 Respond with ONLY the search query string, no quotes, no explanation."""
+
+LANG_SUFFIX = {
+    "en": "",
+    "ua": (
+        "\n\nВАЖЛИВО: Напишіть усю відповідь українською мовою (Ukrainian). "
+        "Використовуйте виключно українську мову у всьому тексті."
+    ),
+}
 
 QUERY_USER = """Subtask: {subtask}
 {retry_context}

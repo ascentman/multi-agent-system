@@ -12,4 +12,5 @@ class AgentState(TypedDict):
     validation_verdict: Literal["valid", "invalid", ""]
     validation_reason: str
     final_report: str
+    language: str                   # "en" or "ua" — output language for notes/report
     trace: list[str]                # human-readable log streamed to the UI

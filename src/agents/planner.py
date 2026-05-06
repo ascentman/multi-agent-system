@@ -9,6 +9,7 @@ from src.llm import call_llm, get_json_llm, get_llm
 from src.prompts import (
     DECOMPOSE_SYSTEM,
     DECOMPOSE_USER,
+    LANG_SUFFIX,
     QUERY_SYSTEM,
     QUERY_USER,
     VALIDATE_SYSTEM,
@@ -26,16 +27,19 @@ def _parse_json(text: str) -> dict:
 
 def planner_decompose(state: AgentState) -> dict:
     """Break the user request into 3-4 specific research subtasks."""
+    lang = state.get("language", "en")
+    lang_note = LANG_SUFFIX.get(lang, "")
     llm = get_json_llm()
     messages = [
         SystemMessage(content=DECOMPOSE_SYSTEM),
-        HumanMessage(content=DECOMPOSE_USER.format(company=state["user_request"])),
+        HumanMessage(content=DECOMPOSE_USER.format(company=state["user_request"]) + lang_note),
     ]
     time.sleep(2)
     parsed = _parse_json(call_llm(llm, messages))
     subtasks = parsed.get("subtasks", [])
 
-    trace_msg = f"**Planner:** Decomposed into {len(subtasks)} subtasks: {subtasks}"
+    numbered = " | ".join(f"({i+1}) {s[:50]}{'…' if len(s)>50 else ''}" for i, s in enumerate(subtasks))
+    trace_msg = f"**Planner:** Decomposed into {len(subtasks)} subtasks — {numbered}"
     return {
         "subtasks": subtasks,
         "current_subtask_idx": 0,
@@ -70,7 +74,12 @@ def planner_query(state: AgentState) -> dict:
     query = call_llm(llm, messages).strip().strip('"')
 
     label = "Retry query" if is_retry else "Query"
-    trace_msg = f"**Planner → {label}:** `{query}` _(subtask {state['current_subtask_idx'] + 1}/{len(state['subtasks'])})_"
+    q_display = query[:50] + "…" if len(query) > 50 else query
+    short = subtask[:50] + "…" if len(subtask) > 50 else subtask
+    trace_msg = (
+        f"**Planner → {label}:** `{q_display}` "
+        f'_(subtask {state["current_subtask_idx"] + 1}/{len(state["subtasks"])}: "{short}")_'
+    )
 
     new_retry_count = retry_count + 1 if is_retry else retry_count
 
@@ -116,10 +125,11 @@ def next_subtask(state: AgentState) -> dict:
         notes[subtask] = "Limited information available."
 
     new_idx = state["current_subtask_idx"] + 1
+    short_done = subtask[:55] + "…" if len(subtask) > 55 else subtask
     trace_msg = (
-        f"**Planner:** Subtask {state['current_subtask_idx'] + 1} complete. Moving to subtask {new_idx + 1}."
+        f'**Planner:** Subtask {state["current_subtask_idx"] + 1} done — "{short_done}". Moving to subtask {new_idx + 1}.'
         if new_idx < len(state["subtasks"])
-        else "**Planner:** All subtasks complete. Handing off to Synthesizer."
+        else f'**Planner:** All {len(state["subtasks"])} subtasks complete — handing off to Synthesizer.'
     )
 
     return {

@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config import SEARCH_RESULTS_PER_QUERY, URLS_TO_FETCH_PER_QUERY
 from src.llm import call_llm, get_llm
-from src.prompts import RESEARCHER_SYSTEM, RESEARCHER_USER
+from src.prompts import LANG_SUFFIX, RESEARCHER_SYSTEM, RESEARCHER_USER
 from src.state import AgentState
 from src.tools.fetch import fetch_url, _MIN_CHARS
 from src.tools.search import web_search
@@ -36,15 +36,22 @@ def researcher(state: AgentState) -> dict:
     content = "\n\n---\n\n".join(content_parts) if content_parts else "No results found."
 
     # 3. LLM summarization
+    lang = state.get("language", "en")
+    lang_note = LANG_SUFFIX.get(lang, "")
     llm = get_llm()
     messages = [
         SystemMessage(content=RESEARCHER_SYSTEM),
-        HumanMessage(content=RESEARCHER_USER.format(subtask=subtask, content=content)),
+        HumanMessage(content=RESEARCHER_USER.format(subtask=subtask, content=content) + lang_note),
     ]
     time.sleep(2)
     notes_text = call_llm(llm, messages).strip()
 
-    trace_msg = f"**Researcher:** Fetched {len(results)} results for `{query}`. Summarized notes."
+    q_display = query[:50] + "…" if len(query) > 50 else query
+    short_subtask = subtask[:55] + "…" if len(subtask) > 55 else subtask
+    trace_msg = (
+        f"**Researcher:** Searched `{q_display}` → {len(results)} snippets, {fetched} page(s) fetched. "
+        f'Summarizing: "{short_subtask}"'
+    )
     return {
         "pending_notes": notes_text,
         "trace": state.get("trace", []) + [trace_msg],

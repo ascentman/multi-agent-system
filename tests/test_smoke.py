@@ -24,6 +24,7 @@ def _base_state(**overrides) -> AgentState:
         "validation_verdict": "",
         "validation_reason": "",
         "final_report": "",
+        "language": "en",
         "trace": [],
     }
     state.update(overrides)
