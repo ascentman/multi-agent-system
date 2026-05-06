@@ -25,7 +25,10 @@ RESEARCHER_SYSTEM = """You are a research analyst. Given a research question and
 clear, concise bullet points. Each bullet should be a concrete fact or insight. Include source
 URLs at the end.
 
-If the content is insufficient to answer the question, explicitly state what is missing."""
+IMPORTANT: Only report information that is explicitly stated in the provided web content.
+Do NOT infer, predict, or fabricate dates, funding amounts, or events. If a date or fact
+is not clearly stated in the source, omit it. If the content is insufficient, explicitly
+state what is missing rather than filling gaps from your own knowledge."""
 
 RESEARCHER_USER = """Research question: {subtask}
 

@@ -53,11 +53,13 @@ def planner_query(state: AgentState) -> dict:
     subtask = state["subtasks"][state["current_subtask_idx"]]
     retry_count = state.get("retry_count", 0)
 
+    is_retry = state.get("validation_verdict") == "invalid"
+
     retry_context = ""
-    if retry_count > 0:
+    if is_retry:
         reason = state.get("validation_reason", "")
         prev_query = state.get("current_query", "")
-        retry_context = f"Previous query '{prev_query}' failed: {reason}. Try a different angle."
+        retry_context = f"Previous query '{prev_query}' failed validation: {reason}. Try a completely different angle or add a year like 2024."
 
     llm = get_llm()
     messages = [
@@ -67,10 +69,10 @@ def planner_query(state: AgentState) -> dict:
     time.sleep(2)
     query = call_llm(llm, messages).strip().strip('"')
 
-    label = "Retry query" if retry_count > 0 else "Query"
+    label = "Retry query" if is_retry else "Query"
     trace_msg = f"**Planner → {label}:** `{query}` _(subtask {state['current_subtask_idx'] + 1}/{len(state['subtasks'])})_"
 
-    new_retry_count = retry_count + 1 if state.get("validation_verdict") == "invalid" else retry_count
+    new_retry_count = retry_count + 1 if is_retry else retry_count
 
     return {
         "current_query": query,
