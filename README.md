@@ -11,7 +11,7 @@ pinned: false
 
 # Multi-Agent Competitive Research Tool
 
-A **learning-first** multi-agent system that produces a competitive intelligence briefing for any company. Built with LangGraph + Groq (free tier) + Gradio.
+A **learning-first** multi-agent system that produces a competitive intelligence briefing for any company. Built with LangGraph + OpenRouter (free tier) + Gradio.
 
 ## Architecture
 
@@ -48,7 +48,7 @@ Every step is streamed live to the UI so you can watch each agent think.
 | Tool | Purpose | Cost |
 |------|---------|------|
 | [LangGraph](https://github.com/langchain-ai/langgraph) | Multi-agent orchestration | Free |
-| [Groq](https://console.groq.com) | LLM API (`llama-3.3-70b-versatile`) | Free tier |
+| [OpenRouter](https://openrouter.ai) | LLM API (`google/gemma-4-31b-it:free`) | Free |
 | [DuckDuckGo Search](https://pypi.org/project/duckduckgo-search/) | Web search, no API key | Free |
 | [trafilatura](https://trafilatura.readthedocs.io) | Clean article extraction | Free |
 | [Gradio](https://gradio.app) | Web UI + streaming | Free |
@@ -68,9 +68,9 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Configure API key (get yours free at https://console.groq.com)
+# 4. Configure API key (get yours free at https://openrouter.ai — no card required)
 cp .env.example .env
-# Edit .env and paste your GROQ_API_KEY
+# Edit .env and paste your OPENROUTER_API_KEY
 
 # 5. Run
 python app.py
@@ -90,5 +90,5 @@ See [LEARNING_NOTES.md](LEARNING_NOTES.md) for a concept-by-concept walkthrough 
 ## Deployment (Hugging Face Spaces)
 
 1. Create a Space at huggingface.co/spaces with **SDK = Gradio**
-2. Add `GROQ_API_KEY` in Space Settings → Secrets
+2. Add `OPENROUTER_API_KEY` in Space Settings → Secrets
 3. Push this repo to the Space's git remote
