@@ -41,7 +41,7 @@ def researcher(state: AgentState) -> dict:
         SystemMessage(content=RESEARCHER_SYSTEM),
         HumanMessage(content=RESEARCHER_USER.format(subtask=subtask, content=content)),
     ]
-    time.sleep(0.3)
+    time.sleep(2)
     notes_text = llm.invoke(messages).content.strip()
 
     trace_msg = f"**Researcher:** Fetched {len(results)} results for `{query}`. Summarized notes."

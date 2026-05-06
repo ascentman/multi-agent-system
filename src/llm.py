@@ -9,11 +9,13 @@ _OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 
 
 def get_llm(temperature: float = 0.2) -> ChatOpenAI:
+    # max_retries=6 → openai SDK does exponential backoff on 429s (1s, 2s, 4s, 8s, 16s, 32s)
     return ChatOpenAI(
         model=MODEL_NAME,
         temperature=temperature,
         api_key=os.environ["OPENROUTER_API_KEY"],
         base_url=_OPENROUTER_BASE,
+        max_retries=6,
     )
 
 

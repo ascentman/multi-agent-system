@@ -22,7 +22,7 @@ def synthesizer(state: AgentState) -> dict:
         SystemMessage(content=SYNTHESIZER_SYSTEM),
         HumanMessage(content=SYNTHESIZER_USER.format(notes_block=notes_block)),
     ]
-    time.sleep(0.3)
+    time.sleep(2)
     report = llm.invoke(messages).content.strip()
 
     trace_msg = "**Synthesizer:** Competitive briefing generated."

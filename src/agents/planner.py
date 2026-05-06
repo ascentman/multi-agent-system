@@ -1,4 +1,5 @@
 import json
+import re
 import time
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -16,6 +17,14 @@ from src.prompts import (
 from src.state import AgentState
 
 
+def _parse_json(text: str) -> dict:
+    """Parse JSON from LLM output, stripping markdown code fences if present."""
+    # Strip ```json ... ``` or ``` ... ``` wrappers
+    text = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
+    text = re.sub(r"\s*```$", "", text.strip())
+    return json.loads(text.strip())
+
+
 def planner_decompose(state: AgentState) -> dict:
     """Break the user request into 3-4 specific research subtasks."""
     llm = get_json_llm()
@@ -23,9 +32,9 @@ def planner_decompose(state: AgentState) -> dict:
         SystemMessage(content=DECOMPOSE_SYSTEM),
         HumanMessage(content=DECOMPOSE_USER.format(company=state["user_request"])),
     ]
-    time.sleep(0.3)
+    time.sleep(2)
     response = llm.invoke(messages)
-    parsed = json.loads(response.content)
+    parsed = _parse_json(response.content)
     subtasks = parsed.get("subtasks", [])
 
     trace_msg = f"**Planner:** Decomposed into {len(subtasks)} subtasks: {subtasks}"
@@ -57,7 +66,7 @@ def planner_query(state: AgentState) -> dict:
         SystemMessage(content=QUERY_SYSTEM),
         HumanMessage(content=QUERY_USER.format(subtask=subtask, retry_context=retry_context)),
     ]
-    time.sleep(0.3)
+    time.sleep(2)
     query = llm.invoke(messages).content.strip().strip('"')
 
     label = "Retry query" if retry_count > 0 else "Query"
@@ -83,9 +92,9 @@ def planner_validate(state: AgentState) -> dict:
         SystemMessage(content=VALIDATE_SYSTEM),
         HumanMessage(content=VALIDATE_USER.format(subtask=subtask, notes=pending)),
     ]
-    time.sleep(0.3)
+    time.sleep(2)
     response = llm.invoke(messages)
-    parsed = json.loads(response.content)
+    parsed = _parse_json(response.content)
     verdict = parsed.get("verdict", "invalid")
     reason = parsed.get("reason", "")
 
