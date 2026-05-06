@@ -5,7 +5,7 @@ import time
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config import MAX_RETRIES
-from src.llm import get_json_llm, get_llm
+from src.llm import call_llm, get_json_llm, get_llm
 from src.prompts import (
     DECOMPOSE_SYSTEM,
     DECOMPOSE_USER,
@@ -19,7 +19,6 @@ from src.state import AgentState
 
 def _parse_json(text: str) -> dict:
     """Parse JSON from LLM output, stripping markdown code fences if present."""
-    # Strip ```json ... ``` or ``` ... ``` wrappers
     text = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
     text = re.sub(r"\s*```$", "", text.strip())
     return json.loads(text.strip())
@@ -33,8 +32,7 @@ def planner_decompose(state: AgentState) -> dict:
         HumanMessage(content=DECOMPOSE_USER.format(company=state["user_request"])),
     ]
     time.sleep(2)
-    response = llm.invoke(messages)
-    parsed = _parse_json(response.content)
+    parsed = _parse_json(call_llm(llm, messages))
     subtasks = parsed.get("subtasks", [])
 
     trace_msg = f"**Planner:** Decomposed into {len(subtasks)} subtasks: {subtasks}"
@@ -67,12 +65,11 @@ def planner_query(state: AgentState) -> dict:
         HumanMessage(content=QUERY_USER.format(subtask=subtask, retry_context=retry_context)),
     ]
     time.sleep(2)
-    query = llm.invoke(messages).content.strip().strip('"')
+    query = call_llm(llm, messages).strip().strip('"')
 
     label = "Retry query" if retry_count > 0 else "Query"
     trace_msg = f"**Planner → {label}:** `{query}` _(subtask {state['current_subtask_idx'] + 1}/{len(state['subtasks'])})_"
 
-    # Increment retry_count only when this is an actual retry (verdict was invalid)
     new_retry_count = retry_count + 1 if state.get("validation_verdict") == "invalid" else retry_count
 
     return {
@@ -93,8 +90,7 @@ def planner_validate(state: AgentState) -> dict:
         HumanMessage(content=VALIDATE_USER.format(subtask=subtask, notes=pending)),
     ]
     time.sleep(2)
-    response = llm.invoke(messages)
-    parsed = _parse_json(response.content)
+    parsed = _parse_json(call_llm(llm, messages))
     verdict = parsed.get("verdict", "invalid")
     reason = parsed.get("reason", "")
 
@@ -118,7 +114,11 @@ def next_subtask(state: AgentState) -> dict:
         notes[subtask] = "Limited information available."
 
     new_idx = state["current_subtask_idx"] + 1
-    trace_msg = f"**Planner:** Subtask {state['current_subtask_idx'] + 1} complete. Moving to subtask {new_idx + 1}." if new_idx < len(state["subtasks"]) else "**Planner:** All subtasks complete. Handing off to Synthesizer."
+    trace_msg = (
+        f"**Planner:** Subtask {state['current_subtask_idx'] + 1} complete. Moving to subtask {new_idx + 1}."
+        if new_idx < len(state["subtasks"])
+        else "**Planner:** All subtasks complete. Handing off to Synthesizer."
+    )
 
     return {
         "notes": notes,
@@ -132,10 +132,9 @@ def next_subtask(state: AgentState) -> dict:
     }
 
 
-# ── Routing helpers (used as conditional edge functions in graph.py) ─────────
+# ── Routing helpers ──────────────────────────────────────────────────────────
 
 def route_after_validate(state: AgentState) -> str:
-    """Route: retry planner_query if invalid + retries left, else next_subtask."""
     verdict = state.get("validation_verdict", "invalid")
     retries = state.get("retry_count", 0)
     if verdict == "invalid" and retries < MAX_RETRIES:
@@ -144,7 +143,6 @@ def route_after_validate(state: AgentState) -> str:
 
 
 def route_after_next_subtask(state: AgentState) -> str:
-    """Route: more subtasks → planner_query, all done → synthesizer."""
     if state["current_subtask_idx"] < len(state["subtasks"]):
         return "more"
     return "done"

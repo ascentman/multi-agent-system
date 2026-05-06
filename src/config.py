@@ -1,4 +1,4 @@
-MODEL_NAME = "google/gemma-4-31b-it:free"
+MODEL_NAME = "meta-llama/llama-3.1-8b-instruct:free"
 MAX_RETRIES = 2
 MAX_SUBTASKS = 4
 SEARCH_RESULTS_PER_QUERY = 5

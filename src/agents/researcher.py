@@ -3,7 +3,7 @@ import time
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config import SEARCH_RESULTS_PER_QUERY, URLS_TO_FETCH_PER_QUERY
-from src.llm import get_llm
+from src.llm import call_llm, get_llm
 from src.prompts import RESEARCHER_SYSTEM, RESEARCHER_USER
 from src.state import AgentState
 from src.tools.fetch import fetch_url, _MIN_CHARS
@@ -42,7 +42,7 @@ def researcher(state: AgentState) -> dict:
         HumanMessage(content=RESEARCHER_USER.format(subtask=subtask, content=content)),
     ]
     time.sleep(2)
-    notes_text = llm.invoke(messages).content.strip()
+    notes_text = call_llm(llm, messages).strip()
 
     trace_msg = f"**Researcher:** Fetched {len(results)} results for `{query}`. Summarized notes."
     return {

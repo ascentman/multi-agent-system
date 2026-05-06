@@ -2,7 +2,7 @@ import time
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from src.llm import get_llm
+from src.llm import call_llm, get_llm
 from src.prompts import SYNTHESIZER_SYSTEM, SYNTHESIZER_USER
 from src.state import AgentState
 
@@ -23,7 +23,7 @@ def synthesizer(state: AgentState) -> dict:
         HumanMessage(content=SYNTHESIZER_USER.format(notes_block=notes_block)),
     ]
     time.sleep(2)
-    report = llm.invoke(messages).content.strip()
+    report = call_llm(llm, messages).strip()
 
     trace_msg = "**Synthesizer:** Competitive briefing generated."
     return {
