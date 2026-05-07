@@ -5,7 +5,9 @@
       "Read(//usr/local/bin/**)",
       "Read(//opt/homebrew/bin/**)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(python *)",
+      "Bash(curl -s http://127.0.0.1:7861/info)"
     ]
   }
 }

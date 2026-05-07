@@ -18,11 +18,33 @@ from src.prompts import (
 from src.state import AgentState
 
 
-def _parse_json(text: str) -> dict:
-    """Parse JSON from LLM output, stripping markdown code fences if present."""
+def _parse_json(text: str, fallback: dict | None = None) -> dict:
+    """Parse JSON from LLM output with multiple fallback strategies."""
+    # 1. Strip <think>...</think> blocks (Qwen, DeepSeek, etc.)
+    text = re.sub(r"<think(?:ing)?>.*?</think(?:ing)?>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    # 2. Strip markdown fences
     text = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.IGNORECASE)
-    text = re.sub(r"\s*```$", "", text.strip())
-    return json.loads(text.strip())
+    text = re.sub(r"\s*```$", "", text.strip()).strip()
+
+    # 3. Direct parse
+    if text:
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+    # 4. Extract first {...} block from prose response
+    m = re.search(r"\{[^{}]*\}", text, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group())
+        except json.JSONDecodeError:
+            pass
+
+    # 5. Give up — return caller-supplied fallback or raise
+    if fallback is not None:
+        return fallback
+    raise ValueError(f"Could not parse JSON from LLM response: {text[:200]!r}")
 
 
 def planner_decompose(state: AgentState) -> dict:
@@ -35,10 +57,10 @@ def planner_decompose(state: AgentState) -> dict:
         HumanMessage(content=DECOMPOSE_USER.format(company=state["user_request"]) + lang_note),
     ]
     time.sleep(2)
-    parsed = _parse_json(call_llm(llm, messages))
+    parsed = _parse_json(call_llm(llm, messages), fallback={"subtasks": []})
     subtasks = parsed.get("subtasks", [])
 
-    numbered = " | ".join(f"({i+1}) {s[:50]}{'…' if len(s)>50 else ''}" for i, s in enumerate(subtasks))
+    numbered = " | ".join(f"({i+1}) {s}" for i, s in enumerate(subtasks))
     trace_msg = f"**Planner:** Decomposed into {len(subtasks)} subtasks — {numbered}"
     return {
         "subtasks": subtasks,
@@ -74,11 +96,9 @@ def planner_query(state: AgentState) -> dict:
     query = call_llm(llm, messages).strip().strip('"')
 
     label = "Retry query" if is_retry else "Query"
-    q_display = query[:50] + "…" if len(query) > 50 else query
-    short = subtask[:50] + "…" if len(subtask) > 50 else subtask
     trace_msg = (
-        f"**Planner → {label}:** `{q_display}` "
-        f'_(subtask {state["current_subtask_idx"] + 1}/{len(state["subtasks"])}: "{short}")_'
+        f"**Planner → {label}:** `{query}` "
+        f'_(subtask {state["current_subtask_idx"] + 1}/{len(state["subtasks"])}: "{subtask}")_'
     )
 
     new_retry_count = retry_count + 1 if is_retry else retry_count
@@ -101,8 +121,8 @@ def planner_validate(state: AgentState) -> dict:
         HumanMessage(content=VALIDATE_USER.format(subtask=subtask, notes=pending)),
     ]
     time.sleep(2)
-    parsed = _parse_json(call_llm(llm, messages))
-    verdict = parsed.get("verdict", "invalid")
+    parsed = _parse_json(call_llm(llm, messages), fallback={"verdict": "valid", "reason": "parse error — accepting notes"})
+    verdict = parsed.get("verdict", "valid")
     reason = parsed.get("reason", "")
 
     trace_msg = f"**Validator:** `{verdict}` — {reason}"

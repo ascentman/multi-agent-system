@@ -46,11 +46,9 @@ def researcher(state: AgentState) -> dict:
     time.sleep(2)
     notes_text = call_llm(llm, messages).strip()
 
-    q_display = query[:50] + "…" if len(query) > 50 else query
-    short_subtask = subtask[:55] + "…" if len(subtask) > 55 else subtask
     trace_msg = (
-        f"**Researcher:** Searched `{q_display}` → {len(results)} snippets, {fetched} page(s) fetched. "
-        f'Summarizing: "{short_subtask}"'
+        f"**Researcher:** Searched `{query}` → {len(results)} snippets, {fetched} page(s) fetched. "
+        f'Summarizing: "{subtask}"'
     )
     return {
         "pending_notes": notes_text,

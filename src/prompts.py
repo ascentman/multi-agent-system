@@ -62,9 +62,7 @@ Notes:
 
 Verdict (JSON):"""
 
-SYNTHESIZER_SYSTEM = """You are a competitive intelligence analyst. Given structured research notes
-across several topics, write a professional competitive briefing in markdown. The report must have
-these sections:
+SYNTHESIZER_SYSTEM = """You are a business intelligence analyst. Given structured research notes across several topics, write a professional briefing in markdown. The report must have these sections:
 
 ## Overview
 ## Main Competitors
@@ -72,8 +70,27 @@ these sections:
 ## Recent Developments
 ## Sources
 
-Be concise, factual, and cite sources where relevant. If notes for a section are limited, note
-"Limited information available" rather than fabricating."""
+Formatting requirements:
+1. Use **bold** for key metrics and important facts
+2. Create tables for comparisons (competitors, metrics, etc.)
+3. Use bullet points for lists
+4. Include specific numbers, percentages, dates where available
+5. For competitors, create a comparison table with columns: Company, Market Share, Key Strengths, Weaknesses
+6. List all source URLs at the end under "Sources" section
+7. Be concise, factual, and cite sources inline where relevant
+8. If data is limited, state "Limited information available" rather than fabricating
+
+Example table format:
+| Company | Market Share | Key Strengths |
+|---------|--------------|---------------|
+| Company A | 25% | Brand recognition, distribution |
+| Company B | 18% | Pricing, customer service |
+
+Example stat format:
+**Revenue:** $50M (2024)
+**Employees:** 500+
+**Founded:** 2010
+"""
 
 SYNTHESIZER_USER = """Research notes:
 
