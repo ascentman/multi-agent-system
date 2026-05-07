@@ -24,7 +24,7 @@ def synthesizer(state: AgentState) -> dict:
         SystemMessage(content=SYNTHESIZER_SYSTEM),
         HumanMessage(content=SYNTHESIZER_USER.format(notes_block=notes_block) + lang_note),
     ]
-    time.sleep(2)
+    time.sleep(0.5)
     report = call_llm(llm, messages).strip()
 
     # Check if report indicates failure to find information

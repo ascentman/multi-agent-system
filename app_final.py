@@ -615,13 +615,13 @@ def _report_with_download(company: str, markdown: str) -> str:
     download_bar = (
         f'<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">'
         f'<a href="data:text/markdown;charset=utf-8,{encoded}" download="{filename}" '
-        f'style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;'
-        f'background:var(--accent);color:#000000;border-radius:8px;'
-        f'font-family:\'Geist Mono\',monospace;font-size:12px;font-weight:700;'
-        f'letter-spacing:0.08em;text-decoration:none;text-transform:uppercase;'
-        f'transition:box-shadow 0.2s;" '
-        f'onmouseover="this.style.boxShadow=\'0 8px 20px rgba(189,249,74,0.4)\'" '
-        f'onmouseout="this.style.boxShadow=\'none\'">'
+        f'style="display:inline-flex;align-items:center;gap:6px;padding:10px 24px;'
+        f'background:var(--accent);color:var(--accent-ink) !important;border-radius:12px;'
+        f'font-family:\'Geist Mono\',monospace !important;font-size:12px;font-weight:700;'
+        f'letter-spacing:0.25em !important;text-decoration:none;text-transform:uppercase;'
+        f'transition:all 0.2s ease;" '
+        f'onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 20px rgba(189,249,74,0.4)\'" '
+        f'onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">'
         f'⬇ Download .md</a>'
         f'</div>'
     )
@@ -916,4 +916,12 @@ with gr.Blocks(title="Multi-Agent Research") as demo:
 
 
 if __name__ == "__main__":
-    demo.launch(css=CSS)
+    import os
+    # For deployment on Render, Railway, etc.
+    port = int(os.environ.get("PORT", 7860))
+    demo.launch(
+        css=CSS,
+        server_name="0.0.0.0",
+        server_port=port,
+        share=False
+    )
