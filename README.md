@@ -13,48 +13,63 @@ pinned: false
 
 A **learning-first** multi-agent system that produces a competitive intelligence briefing for any company. Built with LangGraph + OpenRouter (free tier) + Gradio.
 
-## Architecture
+## 📸 Demo
 
-```
+![Interface Screenshot](demo/demo1.png)
+*Streaming agent trace and final report side-by-side.*
+
+![Execution Flow](demo/demo2.png)
+*Detailed pipeline and progress tracking.*
+
+## 🧠 Architecture & The Planner's Brain
+
+The system follows a **Plan-Execute-Reflexion** pattern. The **Planner** is the orchestrator that ensures quality by supervising the Research process.
+
+### Detailed Workflow
+
+```text
 User Input: "Acme Corp"
-        │
-        ▼
-┌─────────────────┐
-│  Planner Agent  │  ← decomposes request into 3-4 research subtasks
-└────────┬────────┘
-         │  subtask loop
-         ▼
-┌─────────────────┐
-│ Researcher Agent│  ← web search + URL fetch + LLM summarization
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Planner Validate│  ← are the notes on-topic and useful?
-└────────┬────────┘
-    ┌────┴────┐
-  valid    invalid (retry up to 2×)
-    │         └──► refine query → Researcher
+    │
     ▼
-┌─────────────────┐
-│  Synthesizer    │  ← aggregates all validated notes → markdown report
-└─────────────────┘
+[ 1. Planner: Decompose ]
+    │  LLM breaks the request into 3-4 distinct research questions (subtasks).
+    │
+    ▼
+    Loop for each Subtask:
+    │
+    ├──► [ 2. Planner: Query Generator ]
+    │         │  LLM creates a surgical search query (e.g. "Acme Corp pricing 2024").
+    │         │
+    │         ▼
+    │    [ 3. Researcher Agent ]
+    │         │  Web search → HTML extraction → LLM Summarization of findings.
+    │         │
+    │         ▼
+    │    [ 4. Planner: Validator ]  ◄── (Reflexion Step)
+    │         │  LLM checks: "Do these notes actually answer the question?"
+    │         │
+    │         └─── (Invalid) ──► [ Retry Query ] (Max 2x)
+    │         │                  Attempts to fix results by changing the query angle.
+    │         │
+    │         └─── (Valid) ───┐
+    │                         │
+    ▼                         ▼
+[ 5. Synthesizer Agent ] ◄────┘
+       Aggregates all validated notes into a final, structured Markdown report.
 ```
 
-Every step is streamed live to the UI so you can watch each agent think.
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Tool | Purpose | Cost |
 |------|---------|------|
 | [LangGraph](https://github.com/langchain-ai/langgraph) | Multi-agent orchestration | Free |
-| [OpenRouter](https://openrouter.ai) | LLM API (`google/gemma-4-31b-it:free`) | Free |
+| [OpenRouter](https://openrouter.ai) | LLM API (`qwen/qwen-2.5-72b-instruct`) | Free |
 | [DuckDuckGo Search](https://pypi.org/project/duckduckgo-search/) | Web search, no API key | Free |
 | [trafilatura](https://trafilatura.readthedocs.io) | Clean article extraction | Free |
 | [Gradio](https://gradio.app) | Web UI + streaming | Free |
-| [HF Spaces](https://huggingface.co/spaces) | Hosting | Free |
+| [Render](https://render.com) | Hosting / Deployment | Free tier |
 
-## Local Setup
+## 🚀 Local Setup
 
 ```bash
 # 1. Clone and enter directory
@@ -68,27 +83,26 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Configure API key (get yours free at https://openrouter.ai — no card required)
+# 4. Configure API key
 cp .env.example .env
 # Edit .env and paste your OPENROUTER_API_KEY
 
 # 5. Run
-python app.py
+python app_final.py
 # Open http://127.0.0.1:7860
 ```
 
-## Running Tests
+## 💡 What You'll Learn
 
-```bash
-pytest tests/ -v
-```
+See [LEARNING_NOTES.md](LEARNING_NOTES.md) for a concept-by-concept walkthrough explaining *why* each design choice was made, specifically:
+- **State Management**: How to pass data between agents.
+- **Conditional Routing**: How the Planner decides to retry a search.
+- **UI Streaming**: How to show the LLM's internal thoughts to the user.
 
-## What You'll Learn
+## 🌍 Deployment (Render)
 
-See [LEARNING_NOTES.md](LEARNING_NOTES.md) for a concept-by-concept walkthrough explaining *why* each design choice was made.
-
-## Deployment (Hugging Face Spaces)
-
-1. Create a Space at huggingface.co/spaces with **SDK = Gradio**
-2. Add `OPENROUTER_API_KEY` in Space Settings → Secrets
-3. Push this repo to the Space's git remote
+1. Create a **Web Service** on Render.com.
+2. Connect your GitHub repository.
+3. Set **Build Command**: `pip install -r requirements.txt`.
+4. Set **Start Command**: `python app_final.py`.
+5. Add `OPENROUTER_API_KEY` in **Environment Variables**.
